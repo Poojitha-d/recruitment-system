@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="navbar">
+    <h2>HireAI</h2>
+    <div>
+        <span>{{username}} ({{role}})</span>
+        <a href="/logout" style="margin-left: 20px; background: rgba(255,0,0,0.4);
+           padding: 8px 15px; border-radius: 8px;">Logout 🚪</a>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+            <p style="text-align:center; background: rgba(0,255,0,0.2);
+                       padding: 10px; border-radius: 8px; margin: 10px 40px;">{{ msg }}</p>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="container">
+
+    <!-- INTERVIEWER: View assigned interviews & submit feedback -->
+    {% if role == 'interviewer' %}
+    <div class="box">
+        <h3>🎤 My Interview Schedule</h3>
+        <ul>
+        {% for iv in interviews %}
+            <li style="margin-bottom: 18px; padding-bottom: 12px;
+                       border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <b>{{iv[1]}}</b> → {{iv[2]}}<br>
+                <small>📅 {{iv[3]}}</small><br>
+                <span style="background: #667eea; color: white;
+                      padding: 3px 10px; border-radius: 20px; font-size: 12px;">
+                      🗓️ Interview Scheduled
+                </span><br><br>
+
+                {% if not iv[4] %}
+                <!-- Submit Feedback Form -->
+                <form method="post" action="/submit_feedback/{{iv[0]}}">
+                    <select name="result" style="width:auto; padding:5px; margin-bottom:8px;">
+                        <option value="Selected">✅ Selected</option>
+                        <option value="Rejected">❌ Rejected</option>
+                    </select><br>
+                    <input type="text" name="feedback"
+                           placeholder="Write feedback..." style="width:85%;"><br><br>
+                    <button type="submit">Submit Feedback</button>
+                </form>
+                {% else %}
+                <small style="opacity:0.8;">Feedback: {{iv[4]}} → <b>{{iv[5]}}</b></small>
+                {% endif %}
+            </li>
+        {% endfor %}
+        {% if not interviews %}
+            <p style="opacity:0.6;">No interviews assigned yet.</p>
+        {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- COMPANY: Schedule interviews for shortlisted candidates -->
+    {% if role == 'company' %}
+    <div class="box">
+        <h3>📅 Schedule Interview</h3>
+        <ul>
+        {% for app in shortlisted %}
+            <li style="margin-bottom: 15px; padding-bottom: 12px;
+                       border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <b>{{app[1]}}</b> → {{app[2]}}<br>
+                <form method="post" action="/schedule_interview/{{app[0]}}">
+                    <input type="datetime-local" name="interview_time"
+                           style="width:85%; margin: 8px 0;" required>
+                    <select name="interviewer" style="width:85%; padding:5px; margin-bottom:8px;">
+                        {% for iv in interviewers %}
+                            <option value="{{iv}}">{{iv}}</option>
+                        {% endfor %}
+                    </select><br>
+                    <button type="submit">📅 Schedule</button>
+                </form>
+            </li>
+        {% endfor %}
+        {% if not shortlisted %}
+            <p style="opacity:0.6;">No shortlisted candidates yet.</p>
+        {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+</div>
+</body>
+</html>

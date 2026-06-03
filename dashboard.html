@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="navbar">
+    <h2>HireAI</h2>
+    <div>
+        <span>{{username}} ({{role}})</span>
+        {% if role == 'company' or role == 'interviewer' %}
+        <a href="/interviews/{{username}}/{{role}}"
+           style="margin-left: 20px; background: rgba(100,120,255,0.5);
+           padding: 8px 15px; border-radius: 8px;">🎤 Interviews</a>
+        {% endif %}
+        <a href="/logout" style="margin-left: 20px;
+           background: rgba(255,0,0,0.4);
+           padding: 8px 15px; border-radius: 8px;">Logout 🚪</a>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+            <p style="text-align:center; background: rgba(0,255,0,0.2);
+                       padding: 10px; border-radius: 8px; margin: 10px 40px;">{{ msg }}</p>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="container">
+
+<!-- COMPANY: POST JOB -->
+{% if role == 'company' %}
+<div class="box">
+    <h3>📢 Post Job</h3>
+    <form method="post">
+        <input type="text" name="job" placeholder="Job Title" required>
+        <br><br>
+        <input type="hidden" name="action" value="post_job">
+        <button type="submit">Post Job</button>
+    </form>
+</div>
+{% endif %}
+
+<!-- CANDIDATE: UPLOAD RESUME -->
+{% if role == 'candidate' %}
+<div class="box">
+    <h3>📄 Upload Resume</h3>
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="resume" accept=".pdf" required>
+        <br><br>
+        <input type="hidden" name="action" value="upload_resume">
+        <button type="submit">Upload & Get Match Scores</button>
+    </form>
+</div>
+{% endif %}
+
+<!-- SEARCH + JOB LISTINGS -->
+<div class="box">
+    <h3>🔍 Available Jobs</h3>
+
+    <!-- Search bar -->
+    <form method="get">
+        <input type="text" name="search" placeholder="Search jobs..."
+               value="{{search_query}}" style="width:75%; display:inline-block;">
+        <button type="submit" style="width:18%; padding:10px;">🔍</button>
+    </form>
+    <br>
+
+    <ul>
+    {% for job, company, score in jobs %}
+        <li style="margin-bottom: 15px;">
+            <b>{{job}}</b> - <small>{{company}}</small>
+            {% if role == 'candidate' %}
+                <br>
+                <small>Match: {{score}}%</small>
+                <div style="background: rgba(255,255,255,0.2); border-radius: 10px;
+                            height: 8px; margin: 4px 0 8px 0;">
+                    <div style="background: {% if score >= 60 %}#28a745{% elif score >= 30 %}#f0a500{% else %}#dc3545{% endif %};
+                                width: {{score}}%; height: 8px; border-radius: 10px;
+                                transition: width 0.5s;"></div>
+                </div>
+                <a href="/apply/{{username}}/{{job}}"
+                   style="background: rgba(255,255,255,0.2);
+                   padding: 5px 12px; border-radius: 6px; font-size: 13px;">
+                   Apply ➤
+                </a>
+            {% endif %}
+        </li>
+    {% else %}
+        <li style="opacity:0.6;">No jobs found.</li>
+    {% endfor %}
+    </ul>
+</div>
+
+<!-- APPLICATIONS -->
+<div class="box">
+    <h3>📋 Applications</h3>
+    <ul>
+    {% for app in applications %}
+        <li style="margin-bottom: 18px; padding-bottom: 12px;
+                   border-bottom: 1px solid rgba(255,255,255,0.1);">
+
+            <b>{{app[1]}}</b> → {{app[2]}}
+            <br>
+
+            <!-- STATUS BADGE -->
+            {% if app[3] == 'Pending' %}
+                <span style="background: #f0a500; color:white; padding:3px 10px;
+                      border-radius:20px; font-size:12px;">⏳ Pending</span>
+            {% elif app[3] == 'Under Screening' %}
+                <span style="background: #007bff; color:white; padding:3px 10px;
+                      border-radius:20px; font-size:12px;">🔍 Under Screening</span>
+            {% elif app[3] == 'Shortlisted' %}
+                <span style="background: #28a745; color:white; padding:3px 10px;
+                      border-radius:20px; font-size:12px;">✅ Shortlisted</span>
+            {% elif app[3] == 'Interview Scheduled' %}
+                <span style="background: #6f42c1; color:white; padding:3px 10px;
+                      border-radius:20px; font-size:12px;">🗓️ Interview Scheduled</span>
+            {% elif app[3] == 'Selected' %}
+                <span style="background: #20c997; color:white; padding:3px 10px;
+                      border-radius:20px; font-size:12px;">🎉 Selected</span>
+            {% elif app[3] == 'Rejected' %}
+                <span style="background: #dc3545; color:white; padding:3px 10px;
+                      border-radius:20px; font-size:12px;">❌ Rejected</span>
+            {% endif %}
+
+            <!-- SKILL GAP FEEDBACK (candidate only) -->
+            {% if role == 'candidate' and app[5] %}
+            <br><small style="opacity:0.8;">💬 Feedback: {{app[5]}}</small>
+            {% endif %}
+
+            <!-- MATCH SCORE (candidate only) -->
+            {% if role == 'candidate' and app[4] %}
+            <br><small style="opacity:0.7;">🎯 AI Match Score: {{app[4]}}%</small>
+            {% endif %}
+
+            <!-- COMPANY CONTROLS -->
+            {% if role == 'company' %}
+                <br><small style="opacity: 0.7;">Change status:</small><br>
+                <a href="/update_status/{{app[0]}}/Shortlisted/{{username}}"
+                   style="background:#28a745; color:white; padding:4px 10px;
+                   border-radius:6px; font-size:12px; margin-right:5px; margin-top:5px;
+                   display:inline-block;">✅ Shortlist</a>
+                <a href="/update_status/{{app[0]}}/Rejected/{{username}}"
+                   style="background:#dc3545; color:white; padding:4px 10px;
+                   border-radius:6px; font-size:12px; margin-top:5px;
+                   display:inline-block;">❌ Reject</a>
+                <a href="/update_status/{{app[0]}}/Pending/{{username}}"
+                   style="background:#f0a500; color:white; padding:4px 10px;
+                   border-radius:6px; font-size:12px; margin-top:5px;
+                   display:inline-block;">⏳ Pending</a>
+            {% endif %}
+
+        </li>
+    {% endfor %}
+    </ul>
+</div>
+
+</div>
+</body>
+</html>
