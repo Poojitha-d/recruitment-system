@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - HireAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="navbar">
+    <h2>✨ HireAI</h2>
+    <div class="nav-right">
+        <a href="{{ url_for('home') }}">🏠 Home</a>
+        <a href="{{ url_for('login') }}">🔑 Login</a>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="alert {% if 'success' in msg.lower() %}alert-success{% else %}alert-error{% endif %}">
+                {{ msg }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="container-single">
+    <div class="box">
+        <h3 style="justify-content: center; font-size: 1.4rem; margin-bottom: 24px;">📝 Create an Account</h3>
+
+        <form method="post" action="{{ url_for('register') }}">
+            <label for="role">Register As</label>
+            <select name="role" id="role" required>
+                <option value="candidate">Candidate (Job Seeker)</option>
+                <option value="company">Company (Recruiter)</option>
+                <option value="interviewer">Interviewer</option>
+            </select>
+
+            <label for="username">Choose a Username</label>
+            <input type="text" name="username" id="username" placeholder="Letters, numbers, underscores" required minlength="3" autofocus>
+
+            <label for="password">Create Password</label>
+            <input type="password" name="password" id="password" placeholder="At least 4 characters" required minlength="4">
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.92rem;">
+            <span style="color: var(--text-muted);">Already registered?</span>
+            <a href="{{ url_for('login') }}" style="color: #a5b4fc; text-decoration: underline; margin-left: 6px;">Login here</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

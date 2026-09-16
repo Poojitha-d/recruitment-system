@@ -1,0 +1,399 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - HireAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<div class="navbar">
+    <h2>✨ HireAI</h2>
+    <div class="nav-right">
+        <span class="user-badge">{{ username }} ({{ role|capitalize }})</span>
+        {% if role == 'company' or role == 'interviewer' %}
+        <a href="{{ url_for('interviews', username=username, role=role) }}" style="background: rgba(99, 102, 241, 0.25); border-color: rgba(99, 102, 241, 0.45);">
+            🎤 Interviews
+        </a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.35);">
+            🚪 Logout
+        </a>
+    </div>
+</div>
+
+<!-- Flash Notifications -->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="alert {% if 'success' in msg.lower() or 'uploaded' in msg.lower() or 'posted' in msg.lower() %}alert-success{% else %}alert-error{% endif %}">
+                {{ msg }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="container-full">
+
+<!-- ==================== COMPANY DASHBOARD ==================== -->
+{% if role == 'company' %}
+
+    <!-- Top Summary Stat Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-label">Jobs Posted</span>
+            <span class="stat-number">{{ stats.total_jobs }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Applicants</span>
+            <span class="stat-number">{{ stats.total_apps }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label" style="color: #6ee7b7;">Shortlisted Candidates</span>
+            <span class="stat-number" style="color: #10b981;">{{ stats.shortlisted }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label" style="color: #c4b5fd;">Scheduled Interviews</span>
+            <span class="stat-number" style="color: #a78bfa;">{{ stats.interviews_count }}</span>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="container" style="padding: 0; max-width: 100%;">
+        
+        <!-- Left Column: Post Job & Job Listings -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <div class="box">
+                <h3>📢 Post a New Job</h3>
+                <form method="post" action="{{ url_for('dashboard', username=username, role=role) }}">
+                    <label for="job">Job Title & Required Skills</label>
+                    <input type="text" name="job" id="job" placeholder="e.g. Python Developer with Flask and Machine Learning" required minlength="3">
+                    <input type="hidden" name="action" value="post_job">
+                    <button type="submit">Publish Job Opening</button>
+                </form>
+            </div>
+
+            <div class="box">
+                <h3>🔍 Active Job Listings</h3>
+                <form method="get" action="{{ url_for('dashboard', username=username, role=role) }}" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <input type="text" name="search" placeholder="Search roles or companies..." value="{{ search_query }}" style="margin-bottom: 0;">
+                    <button type="submit" style="width: auto; padding: 0 18px;">🔍</button>
+                </form>
+
+                <ul>
+                {% for job, company, score in jobs %}
+                    <li>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <b>{{ job }}</b>
+                            <span class="badge" style="background: rgba(255,255,255,0.1);">{{ company }}</span>
+                        </div>
+                    </li>
+                {% else %}
+                    <li style="opacity: 0.6; text-align: center;">No job postings found.</li>
+                {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Analytics Chart & Applications -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <div class="box">
+                <h3>📊 Application Pipeline Breakdown</h3>
+                <div style="max-height: 240px; display: flex; justify-content: center; align-items: center;">
+                    <canvas id="pipelineChart" width="380" height="220"></canvas>
+                </div>
+            </div>
+
+            <div class="box">
+                <h3>📋 Applicant Tracking System (ATS)</h3>
+                <ul>
+                {% for app in applications %}
+                    <li class="app-item">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <div>
+                                <span style="font-size: 1.05rem; font-weight: 700; color: #fff;">👤 {{ app[1] }}</span>
+                                <span style="color: var(--text-muted); font-size: 0.9rem; margin-left: 6px;">for <b>{{ app[2] }}</b></span>
+                            </div>
+                            
+                            <!-- Status Badge -->
+                            {% if app[3] == 'Pending' %}
+                                <span class="badge badge-pending">⏳ Pending</span>
+                            {% elif app[3] == 'Under Screening' %}
+                                <span class="badge badge-screening">🔍 Under Screening</span>
+                            {% elif app[3] == 'Shortlisted' %}
+                                <span class="badge badge-shortlisted">✅ Shortlisted</span>
+                            {% elif app[3] == 'Interview Scheduled' %}
+                                <span class="badge badge-interview">🗓️ Interview Scheduled</span>
+                            {% elif app[3] == 'Selected' %}
+                                <span class="badge badge-selected">🎉 Selected</span>
+                            {% elif app[3] == 'Rejected' %}
+                                <span class="badge badge-rejected">❌ Rejected</span>
+                            {% else %}
+                                <span class="badge">{{ app[3] }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Match score bar -->
+                        {% if app[4] %}
+                        <div style="margin: 8px 0;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary);">
+                                <span>AI Match Score</span>
+                                <b style="color: #fff;">{{ app[4] }}%</b>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar {% if app[4] >= 60 %}progress-high{% elif app[4] >= 30 %}progress-mid{% else %}progress-low{% endif %}"
+                                     style="width: {{ app[4] }}%;"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Skill Gap Feedback -->
+                        {% if app[5] %}
+                        <p style="font-size: 0.85rem; color: #cbd5e1; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 6px; margin: 6px 0;">
+                            💡 <b>Feedback:</b> {{ app[5] }}
+                        </p>
+                        {% endif %}
+
+                        <!-- Company Quick Status Actions -->
+                        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <a href="{{ url_for('update_status', app_id=app[0], new_status='Shortlisted', company=username) }}"
+                               style="background: #059669; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; font-weight: 600;">
+                               ✅ Shortlist
+                            </a>
+                            <a href="{{ url_for('update_status', app_id=app[0], new_status='Rejected', company=username) }}"
+                               style="background: #dc2626; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; font-weight: 600;">
+                               ❌ Reject
+                            </a>
+                            <a href="{{ url_for('update_status', app_id=app[0], new_status='Pending', company=username) }}"
+                               style="background: #d97706; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; font-weight: 600;">
+                               ⏳ Pending
+                            </a>
+                        </div>
+                    </li>
+                {% else %}
+                    <li style="opacity: 0.6; text-align: center;">No applications received yet.</li>
+                {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Chart.js Script for Company Pipeline -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const ctx = document.getElementById('pipelineChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pending', 'Under Screening', 'Shortlisted', 'Interview Scheduled', 'Selected', 'Rejected'],
+                        datasets: [{
+                            data: [
+                                {{ stats.status_counts.get('Pending', 0) }},
+                                {{ stats.status_counts.get('Under Screening', 0) }},
+                                {{ stats.status_counts.get('Shortlisted', 0) }},
+                                {{ stats.status_counts.get('Interview Scheduled', 0) }},
+                                {{ stats.status_counts.get('Selected', 0) }},
+                                {{ stats.status_counts.get('Rejected', 0) }}
+                            ],
+                            backgroundColor: [
+                                '#f59e0b',
+                                '#3b82f6',
+                                '#10b981',
+                                '#8b5cf6',
+                                '#14b8a6',
+                                '#ef4444'
+                            ],
+                            borderColor: 'rgba(15, 23, 42, 0.8)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#e2e8f0', font: { size: 11, family: 'Inter, sans-serif' }, boxWidth: 12 }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+<!-- ==================== CANDIDATE DASHBOARD ==================== -->
+{% elif role == 'candidate' %}
+
+    <!-- Top Summary Stat Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-label">Available Jobs</span>
+            <span class="stat-number">{{ jobs|length }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">My Applications</span>
+            <span class="stat-number">{{ applications|length }}</span>
+        </div>
+    </div>
+
+    <div class="container" style="padding: 0; max-width: 100%;">
+        
+        <!-- Left Column: Upload Resume & Browse Jobs -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <div class="box">
+                <h3>📄 Upload Resume (PDF)</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 14px;">
+                    Upload your latest resume. Our AI parser extracts text, determines match scores for all openings, and identifies missing skills.
+                </p>
+                <form method="post" enctype="multipart/form-data" action="{{ url_for('dashboard', username=username, role=role) }}">
+                    <input type="file" name="resume" accept=".pdf" required>
+                    <input type="hidden" name="action" value="upload_resume">
+                    <button type="submit">✨ Upload & Analyze with AI</button>
+                </form>
+            </div>
+
+            <div class="box">
+                <h3>🔍 Search & Available Jobs</h3>
+                <form method="get" action="{{ url_for('dashboard', username=username, role=role) }}" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <input type="text" name="search" placeholder="Search roles or companies..." value="{{ search_query }}" style="margin-bottom: 0;">
+                    <button type="submit" style="width: auto; padding: 0 18px;">🔍</button>
+                </form>
+
+                <ul>
+                {% for job, company, score in jobs %}
+                    <li class="app-item">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <b>{{ job }}</b>
+                            <span class="badge" style="background: rgba(255,255,255,0.1);">🏢 {{ company }}</span>
+                        </div>
+
+                        <div style="margin: 10px 0;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary);">
+                                <span>AI Match Score</span>
+                                <b style="color: #fff;">{{ score }}%</b>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar {% if score >= 60 %}progress-high{% elif score >= 30 %}progress-mid{% else %}progress-low{% endif %}"
+                                     style="width: {{ score }}%;"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 10px;">
+                            <a href="{{ url_for('apply', username=username, job=job) }}" class="btn" style="width: auto; padding: 6px 16px; font-size: 0.88rem;">
+                                Apply Now ➤
+                            </a>
+                        </div>
+                    </li>
+                {% else %}
+                    <li style="opacity: 0.6; text-align: center;">No job openings found.</li>
+                {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Right Column: My Applications & Status Tracking -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            <div class="box">
+                <h3>📋 My Application Tracking</h3>
+                <ul>
+                {% for app in applications %}
+                    <li class="app-item">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <div>
+                                <b style="font-size: 1.05rem; color: #fff;">{{ app[2] }}</b>
+                            </div>
+
+                            <!-- Status Badge -->
+                            {% if app[3] == 'Pending' %}
+                                <span class="badge badge-pending">⏳ Pending</span>
+                            {% elif app[3] == 'Under Screening' %}
+                                <span class="badge badge-screening">🔍 Under Screening</span>
+                            {% elif app[3] == 'Shortlisted' %}
+                                <span class="badge badge-shortlisted">✅ Shortlisted</span>
+                            {% elif app[3] == 'Interview Scheduled' %}
+                                <span class="badge badge-interview">🗓️ Interview Scheduled</span>
+                            {% elif app[3] == 'Selected' %}
+                                <span class="badge badge-selected">🎉 Selected</span>
+                            {% elif app[3] == 'Rejected' %}
+                                <span class="badge badge-rejected">❌ Rejected</span>
+                            {% else %}
+                                <span class="badge">{{ app[3] }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Match score -->
+                        {% if app[4] %}
+                        <div style="margin: 8px 0;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary);">
+                                <span>AI Match Score</span>
+                                <b style="color: #fff;">{{ app[4] }}%</b>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar {% if app[4] >= 60 %}progress-high{% elif app[4] >= 30 %}progress-mid{% else %}progress-low{% endif %}"
+                                     style="width: {{ app[4] }}%;"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Skill Gap Feedback -->
+                        {% if app[5] %}
+                        <div style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 10px 12px; margin-top: 8px;">
+                            <p style="font-size: 0.88rem; color: #c7d2fe; margin: 0;">
+                                💡 <b>AI Skill Feedback:</b> {{ app[5] }}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </li>
+                {% else %}
+                    <li style="opacity: 0.6; text-align: center;">You have not applied for any jobs yet.</li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+<!-- ==================== INTERVIEWER DASHBOARD ==================== -->
+{% elif role == 'interviewer' %}
+
+    <div class="box" style="margin-bottom: 24px; text-align: center; padding: 36px 20px;">
+        <h3 style="justify-content: center; font-size: 1.5rem;">🎤 Interviewer Evaluation Hub</h3>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 10px auto 20px;">
+            Conduct assigned interviews, evaluate candidate performance, and submit structured decision feedback.
+        </p>
+        <a href="{{ url_for('interviews', username=username, role=role) }}" class="btn" style="width: auto; padding: 10px 24px;">
+            Go to My Interview Queue →
+        </a>
+    </div>
+
+    <div class="box">
+        <h3>🔍 Available Job Listings Overview</h3>
+        <ul>
+        {% for job, company, score in jobs %}
+            <li>
+                <b>{{ job }}</b> - <small style="color: var(--text-muted);">{{ company }}</small>
+            </li>
+        {% else %}
+            <li style="opacity: 0.6;">No jobs listed.</li>
+        {% endfor %}
+        </ul>
+    </div>
+
+{% endif %}
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HireAI - AI-based Recruitment System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="navbar">
+    <h2>✨ HireAI</h2>
+    <div class="nav-right">
+        <a href="{{ url_for('login') }}">🔑 Login</a>
+        <a href="{{ url_for('register') }}">📝 Register</a>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="alert alert-success">{{ msg }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="hero">
+    <h1>AI Recruitment System 🚀</h1>
+    <p>Automate resume screening, calculate objective match scores, and streamline your hiring pipeline with artificial intelligence.</p>
+</div>
+
+<div class="container">
+    <div class="box">
+        <h3>🎯 For Candidates</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Upload your PDF resume, get instant AI similarity match scores, identify missing skills, and apply to relevant roles in one click.
+        </p>
+        <a href="{{ url_for('register') }}" class="btn">Get Started as Candidate →</a>
+    </div>
+
+    <div class="box">
+        <h3>🏢 For Companies</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Post open positions, automatically rank applicants using NLP cosine similarity, track candidate progress, and schedule interviews effortlessly.
+        </p>
+        <a href="{{ url_for('register') }}" class="btn">Post Jobs & Hire Talent →</a>
+    </div>
+
+    <div class="box">
+        <h3>🎤 For Interviewers</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Access scheduled candidate interviews, conduct structured evaluations, submit feedback notes, and finalize candidate selection statuses.
+        </p>
+        <a href="{{ url_for('login') }}" class="btn" style="background: linear-gradient(135deg, #4f46e5, #4338ca);">Interviewer Portal →</a>
+    </div>
+</div>
+
+</body>
+</html>

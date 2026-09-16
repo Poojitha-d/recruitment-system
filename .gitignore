@@ -1,0 +1,33 @@
+﻿# Database
+database.db
+*.sqlite3
+*.db
+
+# Uploaded candidate files
+uploads/*
+!uploads/.gitkeep
+
+# Python cache & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+.venv/
