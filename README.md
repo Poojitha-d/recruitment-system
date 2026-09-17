@@ -1,4 +1,4 @@
-﻿# AI-based Recruitment System (HireAI) 🚀
+﻿# AI-based Recruitment System (HireAI) 
 
 An intelligent, web-based recruitment and applicant tracking platform powered by **Python (Flask)**, **SQLite**, and **Machine Learning / NLP (scikit-learn)**.
 The system automates candidate resume screening, computes objective match scores using vectorization and cosine similarity, identifies domain-specific skill gaps, and manages the end-to-end recruitment lifecycle across three distinct roles: **Candidate**, **Company (Recruiter)**, and **Interviewer**.
